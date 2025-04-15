@@ -5,26 +5,23 @@ import org.apache.arrow.flight.Location;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 
-import java.util.Map;
 
 public class FlightServerApp {
-
     public static void main(String[] args) throws Exception {
-        try (BufferAllocator allocator = new RootAllocator()) {
-            String configPath = "queries.json";
-            QueryConfig config = QueryConfigLoader.load(configPath);
+        BufferAllocator allocator = new RootAllocator();
+        QueryConfig config = QueryConfigLoader.load("queries.json");
 
-            long ttlMillis = 5 * 60 * 1000;
-            FlightCacheManager cache = new FlightCacheManager(allocator, config, ttlMillis);
-            CachedFlightProducer producer = new CachedFlightProducer(cache);
+        FlightCacheManager cache = new FlightCacheManager(allocator, config);
 
-            Location location = Location.forGrpcInsecure("localhost", 8815);
-            FlightServer server = FlightServer.builder(allocator, location, producer)
-                    .build()
-                    .start();
+        // Flight Server başlat
+        CachedFlightProducer producer = new CachedFlightProducer(cache);
+        Location location = Location.forGrpcInsecure("localhost", 8815);
+        FlightServer server = FlightServer.builder(allocator, location, producer).build().start();
 
-            System.out.println("✅ Flight Server JSON'dan tam konfigürasyonla çalışıyor!");
-            server.awaitTermination();
-        }
+        // API başlat
+        FlightApiServer.start(cache, allocator); // 🎯 cache dışarıdan geliyor
+
+        server.awaitTermination();
     }
 }
+

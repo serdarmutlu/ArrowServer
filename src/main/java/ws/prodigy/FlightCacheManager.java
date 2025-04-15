@@ -3,65 +3,90 @@ package ws.prodigy;
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.vector.VectorSchemaRoot;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.vector.VectorSchemaRoot;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
+
+
+
 
 public class FlightCacheManager {
 
-    private final BufferAllocator allocator;
-    private final long ttlMillis;
     private final QueryConfig.DatabaseConfig dbConfig;
-    private final Map<String, String> queries;
-    private final Map<String, CacheEntry> cache = new HashMap<>();
+    private final Map<String, QueryConfig.QueryEntry> queryEntries;
+    private final BufferAllocator allocator;
 
-    public FlightCacheManager(BufferAllocator allocator, QueryConfig config, long ttlMillis) {
+    private final Map<String, CacheEntry> cache = new HashMap<>(); // ✅ burada
+
+    public FlightCacheManager(BufferAllocator allocator, QueryConfig config) {
         this.allocator = allocator;
-        this.ttlMillis = ttlMillis;
         this.dbConfig = config.database;
-        this.queries = config.queries;
+        this.queryEntries = config.queries;
+
+        preloadCache();
+    }
+
+    private void preloadCache() {
+        for (Map.Entry<String, QueryConfig.QueryEntry> entry : queryEntries.entrySet()) {
+            String ticket = entry.getKey();
+            QueryConfig.QueryEntry query = entry.getValue();
+
+            if (query.cache) {
+                System.out.println("🔁 Önceden yükleniyor: " + ticket);
+                try {
+                    VectorSchemaRoot root = PostgresAdbcLoader.load(allocator, dbConfig, query.sql);
+                    cache.put(ticket, new CacheEntry(root, System.currentTimeMillis()));
+                    System.out.println("✅ " + ticket + " cache'e alındı (" + root.getRowCount() + " satır)");
+                } catch (Exception e) {
+                    throw new RuntimeException("Yenileme hatası: " + ticket, e);
+                }
+            }
+        }
+    }
+
+    public void loadIfMissing(String ticket) {
+        QueryConfig.QueryEntry query = queryEntries.get(ticket);
+        if (query == null) throw new IllegalArgumentException("❌ Tanımsız ticket: " + ticket);
+
+        CacheEntry entry = cache.get(ticket);
+        long now = System.currentTimeMillis();
+        long ttlMillis = query.ttlMinutes * 60_000L;
+
+        boolean expired = entry == null || (now - entry.loadedAt > ttlMillis);
+
+        if (expired) {
+            try {
+                System.out.println("♻️ TTL yenileme veya ilk yükleme: " + ticket);
+                VectorSchemaRoot root = PostgresAdbcLoader.load(allocator, dbConfig, query.sql);
+
+                if (entry != null && entry.root != null) {
+                    entry.root.close(); // önceki root'u temizle
+                }
+
+                cache.put(ticket, new CacheEntry(root, now));
+            } catch (Exception e) {
+                throw new RuntimeException("Yenileme hatası: " + ticket, e);
+            }
+        }
     }
 
     public VectorSchemaRoot get(String ticket) {
-        CacheEntry entry = cache.get(ticket);
-
-        if (entry == null || isExpired(entry)) {
-            System.out.println("🔄 Veri yenileniyor: " + ticket);
-            String sql = queries.get(ticket);
-
-            if (sql == null) {
-                throw new IllegalArgumentException("❌ Tanımsız ticket: " + ticket);
-            }
-
-            try {
-                VectorSchemaRoot root = PostgresAdbcLoader2.load(allocator, dbConfig, sql);
-                cache.put(ticket, new CacheEntry(root, System.currentTimeMillis()));
-                return root;
-            } catch (Exception e) {
-                throw new RuntimeException("❌ Yükleme hatası: " + ticket, e);
-            }
-        }
-
-        return entry.root;
+        loadIfMissing(ticket);
+        return cache.get(ticket).root;
     }
 
-    private boolean isExpired(CacheEntry entry) {
-        return System.currentTimeMillis() - entry.timestamp > ttlMillis;
+    public Set<String> listTickets() {
+        return queryEntries.keySet();
     }
 
     private static class CacheEntry {
         final VectorSchemaRoot root;
-        final long timestamp;
+        final long loadedAt;
 
-        CacheEntry(VectorSchemaRoot root, long timestamp) {
+        CacheEntry(VectorSchemaRoot root, long loadedAt) {
             this.root = root;
-            this.timestamp = timestamp;
+            this.loadedAt = loadedAt;
         }
     }
 }

@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class QueryConfig {
     public DatabaseConfig database;
-    public Map<String, String> queries;
+    public Map<String, QueryEntry> queries;
 
     public static class DatabaseConfig {
         public String host;
@@ -12,5 +12,11 @@ public class QueryConfig {
         public String dbName;
         public String user;
         public String password;
+    }
+
+    public static class QueryEntry {
+        public String sql;
+        public boolean cache;
+        public int ttlMinutes = 10; // default (opsiyonel)
     }
 }

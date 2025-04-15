@@ -2,13 +2,36 @@
   "database": {
     "host": "localhost",
     "port": 5432,
-    "dbName": "serdar",
+    "dbName": "omdb",
     "user": "serdar",
     "password": "serdar"
   },
-  "queries": {
-    "customer": "SELECT * FROM customer",
-    "products": "SELECT * FROM products",
-    "orders":   "SELECT * FROM orders"
+    "queries": {
+      "jobs": {
+      "sql": "SELECT * FROM jobs",
+      "cache": false,
+      "ttlMinutes": 2
+    },
+    "people": {
+      "sql": "SELECT * FROM people",
+      "cache": false,
+      "ttlMinutes": 1
+    },
+    "categories": {
+      "sql": "SELECT * FROM categories",
+      "cache": false,
+      "ttlMinutes": 5
+    },
+
+    "casts": {
+      "sql": "SELECT * FROM casts",
+      "cache": true,
+      "ttlMinutes": 30
+    },
+    "casts2": {
+      "sql": "SELECT * FROM casts2",
+      "cache": false,
+      "ttlMinutes": 30
+    }
   }
 }
