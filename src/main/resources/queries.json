@@ -1,0 +1,14 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "dbName": "serdar",
+    "user": "serdar",
+    "password": "serdar"
+  },
+  "queries": {
+    "customer": "SELECT * FROM customer",
+    "products": "SELECT * FROM products",
+    "orders":   "SELECT * FROM orders"
+  }
+}
