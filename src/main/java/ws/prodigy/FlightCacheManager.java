@@ -80,7 +80,7 @@ public class FlightCacheManager {
         return queryEntries.keySet();
     }
 
-    private static class CacheEntry {
+    static class CacheEntry {
         final VectorSchemaRoot root;
         final long loadedAt;
 
@@ -89,5 +89,23 @@ public class FlightCacheManager {
             this.loadedAt = loadedAt;
         }
     }
+
+    public long getLoadedAt(String ticket) {
+        CacheEntry entry = cache.get(ticket);
+        return (entry != null) ? entry.loadedAt : -1;
+    }
+
+    public long getExpiresIn(String ticket) {
+        QueryConfig.QueryEntry query = queryEntries.get(ticket);
+        CacheEntry entry = cache.get(ticket);
+
+        if (entry == null || query == null) return -1;
+
+        long now = System.currentTimeMillis();
+        long ttlMs = query.ttlMinutes * 60_000L;
+        long age = now - entry.loadedAt;
+        return Math.max(0, ttlMs - age);
+    }
+
 }
 

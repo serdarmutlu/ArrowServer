@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>🛫 Flight Cache Viewer</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css">
+</head>
+<body>
+<main class="container">
+    <h1>🛫 Flight Cache Viewer</h1>
+
+    <label for="ticketSelect">Ticket seç:</label>
+    <select id="ticketSelect"></select>
+
+    <button id="fetchBtn">Veriyi Getir</button>
+
+    <div id="ttlDisplay" style="margin-top: 1em;"></div>
+    <div id="tableContainer" style="margin-top: 2em;"></div>
+</main>
+
+<script>
+    async function fetchTickets() {
+      const res = await fetch('/tickets');
+      const tickets = await res.json();
+      const select = document.getElementById('ticketSelect');
+      select.innerHTML = tickets.map(t => `<option value="${t}">${t}</option>`).join('');
+    }
+
+    async function fetchTTL(ticket) {
+      const res = await fetch('/cache-info');
+      const data = await res.json();
+      const ttlInfo = data[ticket];
+      if (ttlInfo && ttlInfo.expiresIn !== undefined) {
+        const ttlSeconds = Math.floor(ttlInfo.expiresIn / 1000);
+        let color = 'green';
+        if (ttlSeconds < 60) color = 'red';
+        else if (ttlSeconds < 180) color = 'goldenrod';
+
+        document.getElementById('ttlDisplay').innerHTML =
+          `<strong>TTL:</strong> <span style="color: ${color}">${ttlSeconds}s</span>`;
+      }
+    }
+
+    async function fetchData() {
+      const ticket = document.getElementById('ticketSelect').value;
+      if (!ticket) return;
+
+      await fetchTTL(ticket);
+
+      const res = await fetch(`/data?ticket=${ticket}&page=0&size=100`);
+      const data = await res.json();
+      renderTable(data.rows);
+    }
+
+    function renderTable(rows) {
+      const tableDiv = document.getElementById('tableContainer');
+      if (rows.length === 0) {
+        tableDiv.innerHTML = '<p>Veri yok</p>';
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const headerRow = headers.map(h => `<th>${h}</th>`).join('');
+      const bodyRows = rows.map(r =>
+        `<tr>${headers.map(h => `<td>${r[h]}</td>`).join('')}</tr>`
+      ).join('');
+
+      tableDiv.innerHTML = `
+        <table>
+          <thead><tr>${headerRow}</tr></thead>
+          <tbody>${bodyRows}</tbody>
+        </table>
+      `;
+    }
+
+    document.getElementById('fetchBtn').addEventListener('click', fetchData);
+
+    fetchTickets();
+</script>
+</body>
+</html>
+

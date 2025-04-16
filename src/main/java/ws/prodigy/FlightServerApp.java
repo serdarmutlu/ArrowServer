@@ -19,7 +19,7 @@ public class FlightServerApp {
         FlightServer server = FlightServer.builder(allocator, location, producer).build().start();
 
         // API başlat
-        FlightApiServer.start(cache, allocator); // 🎯 cache dışarıdan geliyor
+        FlightApiServer.start(cache, allocator, config);
 
         server.awaitTermination();
     }
