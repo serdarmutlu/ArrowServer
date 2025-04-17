@@ -16,11 +16,13 @@ public class FlightCacheManager {
     private final QueryConfig.DatabaseConfig dbConfig;
     private final Map<String, QueryConfig.QueryEntry> queryEntries;
     private final BufferAllocator allocator;
+    final QueryConfig config; // işte bu eksikti
 
     private final Map<String, CacheEntry> cache = new HashMap<>(); // ✅ burada
 
     public FlightCacheManager(BufferAllocator allocator, QueryConfig config) {
         this.allocator = allocator;
+        this.config = config;
         this.dbConfig = config.database;
         this.queryEntries = config.queries;
 
@@ -105,6 +107,33 @@ public class FlightCacheManager {
         long ttlMs = query.ttlMinutes * 60_000L;
         long age = now - entry.loadedAt;
         return Math.max(0, ttlMs - age);
+    }
+
+    public void load(String ticket, String sql, String dbUrl, String dbUser, String dbPass, long ttlMillis) {
+        QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
+        entry.sql = sql;
+        entry.cache = true;
+        entry.ttlMinutes = (int) (ttlMillis / 60000);
+
+        if (config.queries == null) {
+            config.queries = new HashMap<>();
+        }
+        config.queries.put(ticket, entry);
+
+        this.loadIfMissing(ticket);
+    }
+    public void addQuery(String ticket, QueryConfig.QueryEntry entry) {
+        config.queries.put(ticket, entry);
+    }
+
+    public void addQueryToMemory(String ticket, String sql, boolean cache, int ttlMinutes) {
+        if (config.queries == null)
+            config.queries = new HashMap<>();
+        QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
+        entry.sql = sql;
+        entry.cache = cache;
+        entry.ttlMinutes = ttlMinutes;
+        config.queries.put(ticket, entry);
     }
 
 }

@@ -12,13 +12,43 @@
     <label for="ticketSelect">Ticket seç:</label>
     <select id="ticketSelect"></select>
 
-    <button id="fetchBtn">Veriyi Getir</button>
+    <div class="grid">
+        <button id="fetchBtn">Veriyi Getir</button>
+        <button id="refreshBtn" class="secondary">Cache Yenile</button>
+        <button id="csvPageBtn" class="contrast">Bu Sayfayı CSV</button>
+        <button id="csvAllBtn" class="contrast">Tüm Kayıtları CSV</button>
+    </div>
+
+    <form id="addTicketForm" style="margin-top: 2em;">
+        <fieldset>
+            <legend>➕ Yeni Ticket Ekle</legend>
+            <input type="text" id="ticketName" placeholder="ticket adı (örn: customers)" required>
+            <textarea id="ticketQuery" placeholder="SELECT * FROM customers" rows="3" required></textarea>
+
+            <label for="ticketDbType">Veritabanı Türü</label>
+            <select id="ticketDbType">
+                <option value="postgresql">PostgreSQL</option>
+                <option value="oracle">Oracle</option>
+                <option value="mysql">MySQL</option>
+            </select>
+
+            <input type="text" id="ticketHost" placeholder="host (örn: localhost)" required>
+            <input type="text" id="ticketPort" placeholder="port (örn: 5432)" required>
+            <input type="text" id="ticketDbName" placeholder="veritabanı adı (örn: serdar)" required>
+
+            <input type="text" id="ticketUser" placeholder="kullanıcı adı" required>
+            <input type="password" id="ticketPass" placeholder="şifre" required>
+            <button type="submit">Ticket Ekle</button>
+        </fieldset>
+    </form>
 
     <div id="ttlDisplay" style="margin-top: 1em;"></div>
     <div id="tableContainer" style="margin-top: 2em;"></div>
 </main>
 
 <script>
+    let currentRows = [];
+
     async function fetchTickets() {
       const res = await fetch('/tickets');
       const tickets = await res.json();
@@ -49,7 +79,50 @@
 
       const res = await fetch(`/data?ticket=${ticket}&page=0&size=100`);
       const data = await res.json();
-      renderTable(data.rows);
+      const rows = data.rows ?? [];
+      currentRows = rows;
+      renderTable(rows);
+    }
+
+    async function refreshCache() {
+      const ticket = document.getElementById('ticketSelect').value;
+      if (!ticket) return;
+
+      const res = await fetch(`/refresh?ticket=${ticket}`);
+      const result = await res.text();
+      alert(`Cache sonucu: ${result}`);
+
+      await fetchData();
+    }
+
+    async function addTicket(event) {
+      event.preventDefault();
+
+      const body = {
+        ticket: document.getElementById('ticketName').value,
+        sql: document.getElementById('ticketQuery').value,
+        dbType: document.getElementById('ticketDbType').value,
+        host: document.getElementById('ticketHost').value,
+        port: document.getElementById('ticketPort').value,
+        dbName: document.getElementById('ticketDbName').value,
+        user: document.getElementById('ticketUser').value,
+        password: document.getElementById('ticketPass').value,
+      };
+
+      const res = await fetch('/add-ticket', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+
+      if (res.ok) {
+        alert("✅ Ticket başarıyla eklendi");
+        await fetchTickets();
+        document.getElementById('addTicketForm').reset();
+      } else {
+        const err = await res.text();
+        alert("❌ Ticket eklenemedi: " + err);
+      }
     }
 
     function renderTable(rows) {
@@ -73,7 +146,35 @@
       `;
     }
 
+    function downloadCSV(rows, filename = 'data.csv') {
+      if (!rows || rows.length === 0) return;
+      const headers = Object.keys(rows[0]);
+      const csv = [headers.join(',')].concat(
+        rows.map(r => headers.map(h => `"${r[h]}"`).join(','))
+      ).join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+
+    async function downloadAllCSV() {
+      const ticket = document.getElementById('ticketSelect').value;
+      if (!ticket) return;
+
+      const res = await fetch(`/data?ticket=${ticket}&page=0&size=1000000`);
+      const data = await res.json();
+      const rows = data.rows ?? [];
+      downloadCSV(rows, `${ticket}-all.csv`);
+    }
+
     document.getElementById('fetchBtn').addEventListener('click', fetchData);
+    document.getElementById('refreshBtn').addEventListener('click', refreshCache);
+    document.getElementById('csvPageBtn').addEventListener('click', () => downloadCSV(currentRows, 'page.csv'));
+    document.getElementById('csvAllBtn').addEventListener('click', downloadAllCSV);
+    document.getElementById('addTicketForm').addEventListener('submit', addTicket);
 
     fetchTickets();
 </script>

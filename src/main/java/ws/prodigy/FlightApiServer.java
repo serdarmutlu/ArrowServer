@@ -7,6 +7,7 @@ import org.apache.arrow.vector.FieldVector;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.*;
 
 import org.apache.arrow.memory.BufferAllocator;
@@ -14,9 +15,11 @@ import org.apache.arrow.memory.BufferAllocator;
 
 public class FlightApiServer {
 
-    public static void start(FlightCacheManager cache, BufferAllocator allocator, QueryConfig config) {
+    public static void start(FlightCacheManager cache, BufferAllocator allocator, QueryConfig config) throws SQLException {
         port(8080);
+        staticFiles.location("/static");
 
+        MetadataRepository repository = new MetadataRepository("metadata.db");
         // JSON parser
         ObjectMapper mapper = new ObjectMapper();
 
@@ -107,6 +110,24 @@ public class FlightApiServer {
             return mapper.writeValueAsString(result);
         });
 
+        get("/refresh", (req, res) -> {
+            String ticket = req.queryParams("ticket");
+            if (ticket == null || ticket.isBlank()) {
+                res.status(400);
+                return "❌ Ticket adı belirtilmedi.";
+            }
+
+            try {
+                cache.loadIfMissing(ticket); // sadece işlemi yapar
+                return "✅ '" + ticket + "' cache'e yeniden yüklendi.";
+            } catch (Exception e) {
+                res.status(500);
+                return "❌ Hata: " + e.getMessage();
+            }
+        });
+
+        // 🔽 Register add-ticket endpoint
+        AddTicketEndpoint.register(cache, repository); // ✅ doğru
 
         System.out.println("🌐 Flight API sunucusu http://localhost:8080 adresinde hazır!");
     }

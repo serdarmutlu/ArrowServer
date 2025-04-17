@@ -17,6 +17,9 @@ public class QueryConfig {
     public static class QueryEntry {
         public String sql;
         public boolean cache;
-        public int ttlMinutes = 10; // default (opsiyonel)
+        public int ttlMinutes;
+        public String db;
+        public String user;
+        public String password;
     }
 }
