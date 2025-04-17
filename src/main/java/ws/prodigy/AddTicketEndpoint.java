@@ -21,22 +21,24 @@ public class AddTicketEndpoint {
                 String sql = (String) body.get("sql");
                 String dbType = (String) body.get("dbType");
                 String host = (String) body.get("host");
-                String port = (String) body.get("port");
+                String port = String.valueOf(body.get("port"));
                 String dbName = (String) body.get("dbName");
                 String user = (String) body.get("user");
                 String password = (String) body.get("password");
-
-                String jdbcUrl = JdbcUrlBuilder.build(dbType, host, port, dbName);
 
                 QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
                 entry.sql = sql;
                 entry.cache = true;
                 entry.ttlMinutes = 60;
-                entry.db = jdbcUrl;
+                entry.dbType = dbType;
+                entry.host = host;
+                entry.port = port;
+                entry.dbName = dbName;
                 entry.user = user;
                 entry.password = password;
+                entry.db = JdbcUrlBuilder.build(dbType, host, port, dbName);
 
-                repository.save(ticket, entry, jdbcUrl, user, password);
+                repository.save(ticket, entry, user, password);
                 cache.config.queries.put(ticket, entry);
                 cache.loadIfMissing(ticket);
 

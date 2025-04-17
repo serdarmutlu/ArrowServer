@@ -1,14 +1,5 @@
 package ws.prodigy;
 
-import org.apache.arrow.flight.FlightServer;
-import org.apache.arrow.flight.Location;
-import org.apache.arrow.memory.BufferAllocator;
-import org.apache.arrow.memory.RootAllocator;
-
-import java.util.HashMap;
-import java.util.List;
-
-
 import org.apache.arrow.memory.BufferAllocator;
 import org.apache.arrow.memory.RootAllocator;
 import org.apache.arrow.flight.FlightServer;
@@ -23,8 +14,7 @@ public class FlightServerApp {
 
         // Metadata'dan config üret
         MetadataRepository repository = new MetadataRepository("metadata.db");
-        repository.init(); // 💥 tabloyu oluştur
-
+        repository.init();
         List<MetadataRepository.TableMetadata> metadataList = repository.loadAll();
 
         QueryConfig config = new QueryConfig();
@@ -35,9 +25,13 @@ public class FlightServerApp {
             entry.sql = meta.sql();
             entry.cache = meta.autoCache();
             entry.ttlMinutes = (int) (meta.ttlMillis() / 60000); // millis → minutes
-            entry.db = meta.db();
+            entry.dbType = meta.dbType();
+            entry.host = meta.host();
+            entry.port = meta.port();
+            entry.dbName = meta.dbName();
             entry.user = meta.user();
             entry.password = meta.password();
+            entry.db = JdbcUrlBuilder.build(entry.dbType, entry.host, entry.port, entry.dbName);
 
             config.queries.put(meta.ticket(), entry);
         }
@@ -51,6 +45,7 @@ public class FlightServerApp {
 
         // API başlat
         FlightApiServer.start(cache, allocator, config);
+
 
         server.awaitTermination();
     }
