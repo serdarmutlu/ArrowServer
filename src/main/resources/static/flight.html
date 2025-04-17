@@ -13,189 +13,183 @@
     <select id="ticketSelect"></select>
 
     <div class="grid">
-        <button id="fetchBtn">Veriyi Getir</button>
+        <button id="openDataDialogBtn">Veriyi Getir</button>
         <button id="refreshBtn" class="secondary">Cache Yenile</button>
-        <button id="csvPageBtn" class="contrast">Bu Sayfayı CSV</button>
-        <button id="csvAllBtn" class="contrast">Tüm Kayıtları CSV</button>
         <button id="openDialogBtn" class="outline">➕ Yeni Ticket</button>
     </div>
 
     <div id="ttlDisplay" style="margin-top: 1em;"></div>
-    <div id="tableContainer" style="margin-top: 2em;"></div>
-    <div id="pagination" style="margin-top: 2em; text-align: center;"></div>
-</main>
 
-<dialog id="addTicketDialog">
-    <article>
-        <header>
-            <strong>Yeni Ticket Ekle</strong>
-        </header>
-        <form id="addTicketForm">
-            <input type="text" id="ticketName" placeholder="Ticket adı" required />
-            <input type="text" id="sqlQuery" placeholder="SQL sorgusu" required />
-            <select id="dbType" required>
-                <option value="">Veritabanı Tipi</option>
-                <option>PostgreSQL</option>
-                <option>MySQL</option>
-                <option>Oracle</option>
-            </select>
+    <dialog id="addTicketDialog">
+        <article>
+            <header>
+                <strong>Yeni Ticket Ekle</strong>
+            </header>
+            <form id="addTicketForm">
+                <input type="text" id="ticketName" placeholder="Ticket adı" required />
+                <input type="text" id="sqlQuery" placeholder="SQL sorgusu" required />
+                <input type="number" id="ttl" placeholder="TTL (dakika)" value="5" min="1" required />
 
-            <input type="text" id="host" placeholder="Host" required />
-            <input type="number" id="port" placeholder="Port" required />
-            <input type="text" id="dbName" placeholder="Veritabanı Adı" required />
-            <input type="text" id="user" placeholder="Kullanıcı Adı" required />
-            <input type="password" id="password" placeholder="Şifre" required />
-            <input type="number" id="ttl" placeholder="TTL (dakika)" required />
-            <footer style="margin-top: 1em;">
-                <button type="submit" class="primary">Ekle</button>
-                <button type="button" id="closeDialogBtn" class="secondary">İptal</button>
-            </footer>
-        </form>
-    </article>
-</dialog>
+                <select id="dbType" required>
+                    <option value="">Veritabanı Tipi</option>
+                    <option>PostgreSQL</option>
+                    <option>MySQL</option>
+                    <option>Oracle</option>
+                </select>
 
-<script>
-    let currentRows = [];
-    let currentPage = 0;
-    let totalPages = 0;
-    const pageSize = 100;
+                <input type="text" id="host" placeholder="Host" required />
+                <input type="number" id="port" placeholder="Port" required />
+                <input type="text" id="dbName" placeholder="Veritabanı Adı" required />
+                <input type="text" id="user" placeholder="Kullanıcı Adı" required />
+                <input type="password" id="password" placeholder="Şifre" required />
 
-    async function fetchTickets() {
-        const res = await fetch('/tickets');
-        const tickets = await res.json();
-        const select = document.getElementById('ticketSelect');
-        select.innerHTML = tickets.map(t => `<option value="${t}">${t}</option>`).join('');
-    }
+                <footer style="margin-top: 1em;">
+                    <button type="submit" class="primary">Ekle</button>
+                    <button type="button" id="closeDialogBtn" class="secondary">İptal</button>
+                </footer>
+            </form>
+        </article>
+    </dialog>
 
-    async function fetchTTL(ticket) {
-        const res = await fetch('/cache-info');
-        const data = await res.json();
-        const ttlInfo = data[ticket];
-        if (ttlInfo && ttlInfo.expiresIn !== undefined) {
-            const ttlSeconds = Math.floor(ttlInfo.expiresIn / 1000);
-            let color = 'green';
-            if (ttlSeconds < 60) color = 'red';
-            else if (ttlSeconds < 180) color = 'goldenrod';
+    <dialog id="dataDialog">
+        <article style="width: 100%; max-width: none;">
+            <header>
+                <strong>📊 Veri Görüntüleme</strong>
+            </header>
+            <div class="grid">
+                <button id="csvPageBtn" class="contrast">Bu Sayfayı CSV</button>
+                <button id="csvAllBtn" class="contrast">Tüm Kayıtları CSV</button>
+                <button id="closeDataDialogBtn" class="secondary">Kapat</button>
+            </div>
 
-            document.getElementById('ttlDisplay').innerHTML =
-                `<strong>TTL:</strong> <span style="color: ${color}">${ttlSeconds}s</span>`;
+            <!-- 🆕 Filtre input -->
+            <input type="text" id="filterInput" placeholder="Filtre (örn. ad, ID vs.)" style="width: 100%; margin-top: 1em;" />
+
+            <div id="tableContainer" style="margin-top: 1em;"></div>
+            <div id="pagination" style="margin-top: 1em; text-align: center;"></div>
+        </article>
+    </dialog>
+
+    <script>
+        let currentRows = [];
+        let currentPage = 0;
+        let totalPages = 0;
+        const pageSize = 100;
+
+        async function fetchTickets() {
+          console.log("🎯 Ticket listesi yükleniyor...");
+          const res = await fetch('/tickets');
+          const tickets = await res.json();
+          console.log("📦 Gelen tickets:", tickets);
+          const select = document.getElementById('ticketSelect');
+          select.innerHTML = tickets.map(t => `<option value="${t}">${t}</option>`).join('');
         }
-    }
+
+function renderPagination() {
+  const container = document.getElementById('pagination');
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = `<nav><ul class="pagination">`;
+
+  // ⏮ İlk sayfa
+  html += `<li><button ${currentPage === 0 ? 'disabled' : ''} onclick="fetchData(0)">⏮</button></li>`;
+
+  // ← Önceki
+  html += `<li><button ${currentPage === 0 ? 'disabled' : ''} onclick="fetchData(${currentPage - 1})">←</button></li>`;
+
+  const maxButtons = 5;
+  const start = Math.max(0, Math.min(currentPage - 2, totalPages - maxButtons));
+  const end = Math.min(totalPages, start + maxButtons);
+
+  for (let i = start; i < end; i++) {
+    html += `<li><button ${i === currentPage ? 'class=contrast' : ''} onclick="fetchData(${i})">${i + 1}</button></li>`;
+  }
+
+  // → Sonraki
+  html += `<li><button ${currentPage === totalPages - 1 ? 'disabled' : ''} onclick="fetchData(${currentPage + 1})">→</button></li>`;
+
+  // ⏭ Son sayfa
+  html += `<li><button ${currentPage === totalPages - 1 ? 'disabled' : ''} onclick="fetchData(${totalPages - 1})">⏭</button></li>`;
+
+  html += `</ul></nav>`;
+
+  container.innerHTML = html;
+}
 
     async function fetchData(page = 0) {
-        const ticket = document.getElementById('ticketSelect').value;
-        if (!ticket) return;
+      const ticket = document.getElementById('ticketSelect').value;
+      if (!ticket) return;
 
-        await fetchTTL(ticket);
+      const filter = document.getElementById('filterInput').value.trim();
+      const filterParam = filter ? `&filter=${encodeURIComponent(filter)}` : '';
 
-        const res = await fetch(`/data?ticket=${ticket}&page=${page}&size=${pageSize}`);
-        const data = await res.json();
-        const rows = data.rows ?? [];
-        currentRows = rows;
-        currentPage = page;
-        totalPages = Math.ceil((data.total ?? 0) / pageSize);
+      const res = await fetch(`/data?ticket=${ticket}&page=${page}&size=${pageSize}${filterParam}`);
+      const data = await res.json();
+      const rows = data.rows ?? [];
+      currentRows = rows;
+      currentPage = page;
+      totalPages = Math.ceil((data.total ?? 0) / pageSize);
 
-        renderTable(rows);
-        renderPagination();
+      renderTable(rows);
+      renderPagination();
     }
 
-    function renderPagination() {
-        const container = document.getElementById('pagination');
-        if (totalPages <= 1) {
-            container.innerHTML = '';
-            return;
-        }
+document.getElementById('filterInput').addEventListener('input', () => {
+  fetchData(0);
+});
 
-        let html = `<nav><ul class="pagination">`;
-        html += `<li><button ${currentPage === 0 ? 'disabled' : ''} onclick="fetchData(${currentPage - 1})">←</button></li>`;
-
-        const maxButtons = 5;
-        const start = Math.max(0, Math.min(currentPage - 2, totalPages - maxButtons));
-        const end = Math.min(totalPages, start + maxButtons);
-
-        for (let i = start; i < end; i++) {
-            html += `<li><button ${i === currentPage ? 'class=contrast' : ''} onclick="fetchData(${i})">${i + 1}</button></li>`;
-        }
-
-        html += `<li><button ${currentPage === totalPages - 1 ? 'disabled' : ''} onclick="fetchData(${currentPage + 1})">→</button></li>`;
-        html += `</ul></nav>`;
-
-        container.innerHTML = html;
-    }
-
-
-    async function refreshCache() {
-        const ticket = document.getElementById('ticketSelect').value;
-        if (!ticket) return;
-
-        const res = await fetch(`/refresh?ticket=${ticket}`);
-        const result = await res.text();
-        alert(`Cache sonucu: ${result}`);
-
-        await fetchData(0);
-    }
-
-    function renderTable(rows) {
-        const tableDiv = document.getElementById('tableContainer');
-        if (rows.length === 0) {
+        function renderTable(rows) {
+          const tableDiv = document.getElementById('tableContainer');
+          if (rows.length === 0) {
             tableDiv.innerHTML = '<p>Veri yok</p>';
             return;
+          }
+
+          const headers = Object.keys(rows[0]);
+          const headerRow = headers.map(h => `<th>${h}</th>`).join('');
+          const bodyRows = rows.map(r =>
+            `<tr>${headers.map(h => `<td>${r[h]}</td>`).join('')}</tr>`
+          ).join('');
+
+          tableDiv.innerHTML = `
+            <table>
+              <thead><tr>${headerRow}</tr></thead>
+              <tbody>${bodyRows}</tbody>
+            </table>
+          `;
         }
 
-        const headers = Object.keys(rows[0]);
-        const headerRow = headers.map(h => `<th>${h}</th>`).join('');
-        const bodyRows = rows.map(r =>
-            `<tr>${headers.map(h => `<td>${r[h]}</td>`).join('')}</tr>`
-        ).join('');
-
-        tableDiv.innerHTML = `
-        <table>
-          <thead><tr>${headerRow}</tr></thead>
-          <tbody>${bodyRows}</tbody>
-        </table>
-      `;
-    }
-
-    function downloadCSV(rows, filename = 'data.csv') {
-        if (!rows || rows.length === 0) return;
-        const headers = Object.keys(rows[0]);
-        const csv = [headers.join(',')].concat(
+        function downloadCSV(rows, filename = 'data.csv') {
+          if (!rows || rows.length === 0) return;
+          const headers = Object.keys(rows[0]);
+          const csv = [headers.join(',')].concat(
             rows.map(r => headers.map(h => `"${r[h]}"`).join(','))
-        ).join('\n');
+          ).join('\n');
 
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        link.click();
-    }
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = filename;
+          link.click();
+        }
 
-    async function downloadAllCSV() {
-        const ticket = document.getElementById('ticketSelect').value;
-        if (!ticket) return;
+        async function downloadAllCSV() {
+          const ticket = document.getElementById('ticketSelect').value;
+          if (!ticket) return;
 
-        const res = await fetch(`/data?ticket=${ticket}&page=0&size=1000000`);
-        const data = await res.json();
-        const rows = data.rows ?? [];
-        downloadCSV(rows, `${ticket}-all.csv`);
-    }
+          const res = await fetch(`/data?ticket=${ticket}&page=0&size=1000000`);
+          const data = await res.json();
+          const rows = data.rows ?? [];
+          downloadCSV(rows, `${ticket}-all.csv`);
+        }
 
-    document.getElementById('fetchBtn').addEventListener('click', () => fetchData(0));
-    document.getElementById('refreshBtn').addEventListener('click', refreshCache);
-    document.getElementById('csvPageBtn').addEventListener('click', () => downloadCSV(currentRows, 'page.csv'));
-    document.getElementById('csvAllBtn').addEventListener('click', downloadAllCSV);
+        document.getElementById('addTicketForm').addEventListener('submit', async (e) => {
+          e.preventDefault();
 
-    const dialog = document.getElementById('addTicketDialog');
-    document.getElementById('openDialogBtn').addEventListener('click', () => {
-        document.getElementById('addTicketForm').reset(); // tüm alanları sıfırlar
-        document.getElementById('addTicketDialog').showModal();
-    });
-    document.getElementById('closeDialogBtn').addEventListener('click', () => dialog.close());
-
-    document.getElementById('addTicketForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const payload = {
+          const payload = {
             ticket: document.getElementById('ticketName').value,
             sql: document.getElementById('sqlQuery').value,
             ttl: parseInt(document.getElementById('ttl').value),
@@ -205,33 +199,46 @@
             dbName: document.getElementById('dbName').value,
             user: document.getElementById('user').value,
             password: document.getElementById('password').value
-        };
+          };
 
-        const res = await fetch(`/add-ticket`, {
+          const res = await fetch(`/add-ticket`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
-        });
+          });
 
-        if (res.ok) {
+          if (res.ok) {
             alert('✅ Ticket başarıyla eklendi!');
             fetchTickets();
             document.getElementById('addTicketDialog').close();
-        } else {
+          } else {
             alert('❌ Ticket eklenemedi!');
-        }
-    });
+          }
+        });
 
-    document.getElementById('openDialogBtn').addEventListener('click', () => {
-        document.getElementById('addTicketDialog').showModal();
-    });
+        document.getElementById('openDialogBtn').addEventListener('click', () => {
+          document.getElementById('addTicketForm').reset();
+          document.getElementById('addTicketDialog').showModal();
+        });
 
-    document.getElementById('closeDialogBtn').addEventListener('click', () => {
-        document.getElementById('addTicketDialog').close();
-    });
+        document.getElementById('closeDialogBtn').addEventListener('click', () => {
+          document.getElementById('addTicketDialog').close();
+        });
 
-    fetchTickets();
-</script>
+        document.getElementById('openDataDialogBtn').addEventListener('click', async () => {
+          await fetchData(0);
+          document.getElementById('dataDialog').showModal();
+        });
+
+        document.getElementById('closeDataDialogBtn').addEventListener('click', () => {
+          document.getElementById('dataDialog').close();
+        });
+
+        document.getElementById('csvPageBtn').addEventListener('click', () => downloadCSV(currentRows, 'page.csv'));
+        document.getElementById('csvAllBtn').addEventListener('click', downloadAllCSV);
+
+        fetchTickets();
+    </script>
 </body>
 </html>
 

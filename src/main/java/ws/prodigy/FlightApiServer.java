@@ -51,14 +51,15 @@ public class FlightApiServer {
             String ticket = req.queryParams("ticket");
             int page = Integer.parseInt(req.queryParams("page"));
             int size = Integer.parseInt(req.queryParams("size"));
+            String filter = req.queryParams("filter");
 
             System.out.println("\n📩 /data çağrıldı, ticket = " + ticket);
             System.out.println("🎯 config'te bu ticket var mı? " + config.queries.containsKey(ticket));
 
             cache.loadIfMissing(ticket);
             VectorSchemaRoot root = cache.get(ticket);
-            List<Map<String, Object>> rows = new ArrayList<>();
 
+            List<Map<String, Object>> rows = new ArrayList<>();
             if (root == null || root.getRowCount() == 0) {
                 System.out.println("⚠️ root boş veya sıfır kayıt içeriyor");
                 res.type("application/json");
@@ -68,19 +69,49 @@ public class FlightApiServer {
                 ));
             }
 
-            int total = root.getRowCount();
-            System.out.println("📊 root satır sayısı: " + total);
-            System.out.println("📥 vektör sayısı: " + root.getFieldVectors().size());
+            int total = 0;
+            for (int i = 0; i < root.getRowCount(); i++) {
+                boolean include = true;
+                if (filter != null && !filter.isBlank()) {
+                    include = false;
+                    for (var v : root.getFieldVectors()) {
+                        Object val = v.getObject(i);
+                        if (val != null && val.toString().toLowerCase().contains(filter.toLowerCase())) {
+                            include = true;
+                            break;
+                        }
+                    }
+                }
+                if (include) total++;
+            }
 
             int start = page * size;
-            int end = Math.min(start + size, total);
+            int end = Math.min(start + size, root.getRowCount());
 
-            for (int i = start; i < end; i++) {
-                Map<String, Object> row = new HashMap<>();
-                for (var v : root.getFieldVectors()) {
-                    row.put(v.getName(), v.getObject(i));
+            int added = 0;
+            for (int i = 0; i < root.getRowCount(); i++) {
+                boolean include = true;
+                if (filter != null && !filter.isBlank()) {
+                    include = false;
+                    for (var v : root.getFieldVectors()) {
+                        Object val = v.getObject(i);
+                        if (val != null && val.toString().toLowerCase().contains(filter.toLowerCase())) {
+                            include = true;
+                            break;
+                        }
+                    }
                 }
-                rows.add(row);
+
+                if (include) {
+                    if (added >= start && added < start + size) {
+                        Map<String, Object> row = new HashMap<>();
+                        for (var v : root.getFieldVectors()) {
+                            row.put(v.getName(), v.getObject(i));
+                        }
+                        rows.add(row);
+                    }
+                    added++;
+                }
             }
 
             res.type("application/json");
