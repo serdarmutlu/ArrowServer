@@ -23,7 +23,7 @@ public class FlightServerApp {
         for (MetadataRepository.TableMetadata meta : metadataList) {
             QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
             entry.sql = meta.sql();
-            entry.cache = meta.autoCache();
+            entry.cache = meta.cache();
             entry.ttlMinutes = (int) (meta.ttlMillis() / 60000); // millis → minutes
             entry.dbType = meta.dbType();
             entry.host = meta.host();
@@ -32,6 +32,7 @@ public class FlightServerApp {
             entry.user = meta.user();
             entry.password = meta.password();
             entry.db = JdbcUrlBuilder.build(entry.dbType, entry.host, entry.port, entry.dbName);
+            entry.initialCache = meta.initial_cache();
 
             config.queries.put(meta.ticket(), entry);
         }
@@ -43,6 +44,13 @@ public class FlightServerApp {
         Location location = Location.forGrpcInsecure("localhost", 8815);
         FlightServer server = FlightServer.builder(allocator, location, producer).build().start();
 
+        // ✅ initialCache true olanları başta yükle
+        for (var entry : config.queries.entrySet()) {
+            if (entry.getValue().initialCache) {
+                System.out.println("🔄 Preloading cache for ticket: " + entry.getKey());
+                cache.load(entry.getKey());
+            }
+        }
         // API başlat
         FlightApiServer.start(cache, allocator, config);
 

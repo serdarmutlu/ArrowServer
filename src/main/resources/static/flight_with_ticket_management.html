@@ -1,83 +1,72 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>🛫 Flight Cache Viewer</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css">
+<meta charset="utf-8"/>
+<title>🛫 Flight Cache Viewer</title>
+<link href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css" rel="stylesheet"/>
 </head>
 <body>
 <main class="container">
-    <h1>🛫 Flight Cache Viewer</h1>
-
-    <label for="ticketSelect">Ticket seç:</label>
-    <select id="ticketSelect"></select>
-
-    <div class="grid" style="margin-top: 1em; margin-bottom: 1.5em;">
-        <button id="editBtn">📝 Düzenle</button>
-        <button id="deleteBtn" class="secondary">🗑️ Sil</button>
-    </div>
-
-
-    <div class="grid">
-        <button id="openDataDialogBtn">Veriyi Getir</button>
-        <button id="refreshBtn" class="secondary">Cache Yenile</button>
-        <button id="openDialogBtn" class="outline">➕ Yeni Ticket</button>
-    </div>
-
-    <div id="ttlDisplay" style="margin-top: 1em;"></div>
-
-    <dialog id="addTicketDialog">
-        <article>
-            <header>
-                <strong id="dialogTitle">Yeni Ticket Ekle</strong>
-            </header>
-            <form id="addTicketForm">
-                <input type="text" id="ticketName" placeholder="Ticket adı" required />
-                <input type="text" id="sqlQuery" placeholder="SQL sorgusu" required />
-                <input type="number" id="ttl" placeholder="TTL (dakika)" value="5" min="1" required />
-
-                <select id="dbType" required>
-                    <option value="">Veritabanı Tipi</option>
-                    <option>PostgreSQL</option>
-                    <option>MySQL</option>
-                    <option>Oracle</option>
-                </select>
-
-                <input type="text" id="host" placeholder="Host" required />
-                <input type="number" id="port" placeholder="Port" required />
-                <input type="text" id="dbName" placeholder="Veritabanı Adı" required />
-                <input type="text" id="user" placeholder="Kullanıcı Adı" required />
-                <input type="password" id="password" placeholder="Şifre" required />
-
-                <footer style="margin-top: 1em;">
-                    <button type="submit" class="primary" id="submitBtn">Ekle</button>
-                    <button type="button" id="closeDialogBtn" class="secondary">İptal</button>
-                </footer>
-            </form>
-        </article>
-    </dialog>
-
-    <dialog id="dataDialog">
-        <article style="width: 100%; max-width: none;">
-            <header>
-                <strong>📊 Veri Görüntüleme</strong>
-            </header>
-            <div class="grid">
-                <button id="csvPageBtn" class="contrast">Bu Sayfayı CSV</button>
-                <button id="csvAllBtn" class="contrast">Tüm Kayıtları CSV</button>
-                <button id="closeDataDialogBtn" class="secondary">Kapat</button>
-            </div>
-
-            <!-- 🆕 Filtre input -->
-            <input type="text" id="filterInput" placeholder="Filtre (örn. ad, ID vs.)" style="width: 100%; margin-top: 1em;" />
-
-            <div id="tableContainer" style="margin-top: 1em;"></div>
-            <div id="pagination" style="margin-top: 1em; text-align: center;"></div>
-        </article>
-    </dialog>
-
-    <script>
-        let currentRows = [];
+<h1>🛫 Flight Cache Viewer</h1>
+<label for="ticketSelect">Ticket seç:</label>
+<select id="ticketSelect"></select>
+<div class="grid" style="margin-top: 1em; margin-bottom: 1.5em;">
+<button id="editBtn">📝 Düzenle</button>
+<button class="secondary" id="deleteBtn">🗑️ Sil</button>
+</div>
+<div class="grid">
+<button id="openDataDialogBtn">Veriyi Getir</button>
+<button class="secondary" id="refreshBtn">Cache Yenile</button>
+<button class="outline" id="openDialogBtn">➕ Yeni Ticket</button>
+</div>
+<div id="ttlDisplay" style="margin-top: 1em;"></div>
+<dialog id="addTicketDialog">
+<article>
+<header>
+<strong id="dialogTitle">Yeni Ticket Ekle</strong>
+</header>
+<form id="addTicketForm">
+<input id="ticketName" placeholder="Ticket adı" required="" type="text"/>
+<input id="sqlQuery" placeholder="SQL sorgusu" required="" type="text"/>
+<input id="ttl" min="1" placeholder="TTL (dakika)" required="" type="number" value="5"/>
+<select id="dbType" required="">
+<option value="">Veritabanı Tipi</option>
+<option>PostgreSQL</option>
+<option>MySQL</option>
+<option>Oracle</option>
+</select>
+<input id="host" placeholder="Host" required="" type="text"/>
+<input id="port" placeholder="Port" required="" type="number"/>
+<input id="dbName" placeholder="Veritabanı Adı" required="" type="text"/>
+<input id="user" placeholder="Kullanıcı Adı" required="" type="text"/>
+<input id="password" placeholder="Şifre" required="" type="password"/>
+<footer style="margin-top: 1em;">
+<button class="primary" id="submitBtn" type="submit">Ekle</button>
+<button class="secondary" id="closeDialogBtn" type="button">İptal</button>
+</footer>
+</form>
+</article>
+</dialog>
+<dialog id="dataDialog">
+<article style="width: 100%; max-width: none;">
+<header>
+<strong>📊 Veri Görüntüleme</strong>
+</header>
+<div class="grid">
+<button class="contrast" id="csvPageBtn">Bu Sayfayı CSV</button>
+<button class="contrast" id="csvAllBtn">Tüm Kayıtları CSV</button>
+<button class="secondary" id="closeDataDialogBtn">Kapat</button>
+</div>
+<!-- 🆕 Filtre input -->
+<input id="filterInput" placeholder="Filtre (örn. ad, ID vs.)" style="width: 100%; margin-top: 1em;" type="text"/>
+<div id="tableContainer" style="margin-top: 1em;"></div>
+<div id="pagination" style="margin-top: 1em; text-align: center;"></div>
+</article>
+</dialog>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+let currentRows = [];
         let currentPage = 0;
         let totalPages = 0;
         const pageSize = 100;
@@ -296,7 +285,146 @@ document.getElementById('filterInput').addEventListener('input', () => {
         document.getElementById('csvAllBtn').addEventListener('click', downloadAllCSV);
 
         fetchTickets();
-    </script>
-</body>
-</html>
+    
+document.getElementById("runSqlBtn").addEventListener("click", async () => {
+    const sql = document.getElementById("sqlInput").value.trim();
+    const resultDiv = document.getElementById("sqlResult");
+    const errorDiv = document.getElementById("sqlError");
 
+    resultDiv.innerHTML = "";
+    errorDiv.textContent = "";
+
+    if (!sql.toLowerCase().startsWith("select")) {
+        errorDiv.textContent = "Sadece SELECT sorguları desteklenmektedir.";
+        return;
+    }
+
+    try {
+        const res = await fetch("/sql-query", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sql })
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            errorDiv.textContent = "⚠️ Hata: " + err;
+            return;
+        }
+
+        const data = await res.json();
+        if (!data.length) {
+            resultDiv.innerHTML = "<em>Sonuç bulunamadı.</em>";
+            return;
+        }
+
+        const table = document.createElement("table");
+        const thead = table.createTHead();
+        const headerRow = thead.insertRow();
+        Object.keys(data[0]).forEach(key => {
+            const th = document.createElement("th");
+            th.textContent = key;
+            headerRow.appendChild(th);
+        });
+
+        const tbody = table.createTBody();
+        data.forEach(row => {
+            const tr = tbody.insertRow();
+            Object.values(row).forEach(value => {
+                const td = tr.insertCell();
+                td.textContent = value;
+            });
+        });
+
+        resultDiv.appendChild(table);
+    } catch (e) {
+        errorDiv.textContent = "❌ Beklenmeyen hata: " + e.message;
+    }
+});
+});
+
+async function loadTickets() {
+    const res = await fetch("/tickets");
+    const tickets = await res.json();
+    const tbody = document.querySelector("#ticketTable tbody");
+    tbody.innerHTML = "";
+
+    for (const ticket of tickets) {
+        const metaRes = await fetch(`/metadata?ticket=${encodeURIComponent(ticket)}`);
+        const meta = await metaRes.json();
+
+        const tr = document.createElement("tr");
+
+        const columns = [
+            ticket,
+            meta.dbType,
+            meta.ttlMinutes,
+            meta.cache ? "✅" : "❌",
+            meta.initialCache ? "✅" : "❌"
+        ];
+        columns.forEach(text => {
+            const td = document.createElement("td");
+            td.textContent = text;
+            tr.appendChild(td);
+        });
+
+        const actions = [
+            ["✏️", () => openEditDialog(ticket)],
+            ["🗑️", () => deleteTicket(ticket)],
+            ["🔄", async () => {
+                const updated = { ...meta, initialCache: !meta.initialCache };
+                await fetch("/update-ticket", {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ ticket, ...updated })
+                });
+                loadTickets();
+            }],
+            ["♻️", async () => {
+                await fetch(`/data?ticket=${encodeURIComponent(ticket)}&page=0&size=1`);
+                loadTickets();
+            }]
+        ];
+
+        actions.forEach(([label, handler]) => {
+            const td = document.createElement("td");
+            const btn = document.createElement("button");
+            btn.textContent = label;
+            btn.onclick = handler;
+            td.appendChild(btn);
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    }
+}
+</script>
+
+<section style="margin-top: 2em;">
+<h3>🎟️ Ticket Yönetimi</h3>
+<table id="ticketTable">
+<thead>
+<tr>
+<th>Ticket</th>
+<th>DB</th>
+<th>TTL</th>
+<th>Cache?</th>
+<th>Initial?</th>
+<th>Düzenle</th>
+<th>Sil</th>
+<th>Toggle</th>
+<th>Yenile</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+</section>
+<section style="margin-top: 2em;">
+<h3>🧪 SQL Konsolu</h3>
+<textarea id="sqlInput" placeholder="SELECT * FROM myTicket WHERE age &gt; 30" rows="4" style="width: 100%;"></textarea>
+<button class="primary" id="runSqlBtn" style="margin-top: 0.5em;">Sorguyu Çalıştır</button>
+<div id="sqlError" style="color: red; margin-top: 1em;"></div>
+<div id="sqlResult" style="margin-top: 1em;"></div>
+</section>
+</main></body>
+</html>

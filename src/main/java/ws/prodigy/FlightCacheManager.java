@@ -19,6 +19,10 @@ public class FlightCacheManager {
         this.config = config;
     }
 
+    public boolean contains(String ticket) {
+        return get(ticket) != null;
+    }
+
     public record CacheEntry(VectorSchemaRoot root, long loadedAtMillis, long ttlMillis) {
         public boolean isExpired() {
             return System.currentTimeMillis() - loadedAtMillis > ttlMillis;
@@ -43,6 +47,11 @@ public class FlightCacheManager {
         }
     }
 
+    public void load(String ticket) {
+        if (!this.contains(ticket)) {
+            this.loadIfMissing(ticket);
+        }
+    }
     public VectorSchemaRoot get(String ticket) {
         CacheEntry entry = cache.get(ticket);
         return entry != null ? entry.root : null;

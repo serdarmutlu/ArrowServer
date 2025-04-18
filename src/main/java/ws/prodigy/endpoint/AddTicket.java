@@ -1,14 +1,18 @@
-package ws.prodigy;
+package ws.prodigy.endpoint;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import spark.Request;
 import spark.Response;
+import ws.prodigy.FlightCacheManager;
+import ws.prodigy.JdbcUrlBuilder;
+import ws.prodigy.MetadataRepository;
+import ws.prodigy.QueryConfig;
 
 import java.util.Map;
 
 import static spark.Spark.post;
 
-public class AddTicketEndpoint {
+public class AddTicket {
 
     public static void register(FlightCacheManager cache, MetadataRepository repository) {
 
@@ -25,11 +29,12 @@ public class AddTicketEndpoint {
                 String dbName = (String) body.get("dbName");
                 String user = (String) body.get("user");
                 String password = (String) body.get("password");
+                String ttl = String.valueOf(body.get("ttl"));
 
                 QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
                 entry.sql = sql;
                 entry.cache = true;
-                entry.ttlMinutes = 60;
+                entry.ttlMinutes = Integer.parseInt(ttl);
                 entry.dbType = dbType;
                 entry.host = host;
                 entry.port = port;

@@ -46,7 +46,7 @@ public class GenericAdbcLoader {
 
                 try {
                     while (reader.loadNextBatch()) {
-                        System.out.println("✅ batch yüklendi!");
+                        //System.out.println("✅ batch yüklendi!");
                         batchFound = true;
                         VectorSchemaRoot batch = reader.getVectorSchemaRoot();
                         int batchSize = batch.getRowCount();

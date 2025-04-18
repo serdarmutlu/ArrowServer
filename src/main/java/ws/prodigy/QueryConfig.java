@@ -19,5 +19,9 @@ public class QueryConfig {
         public String password;
 
         public String db; // jdbc url
+        public boolean initialCache;
+        public QueryEntry() {}
+
     }
+
 }
