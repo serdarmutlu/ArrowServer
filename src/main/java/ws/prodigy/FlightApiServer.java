@@ -15,7 +15,7 @@ public class FlightApiServer {
 
         // Ana sayfayı yönlendir
         get("/", (req, res) -> {
-            res.redirect("/flight_ticket_table_rebuilt.html");
+            res.redirect("/index.html");
             return null;
         });
 
