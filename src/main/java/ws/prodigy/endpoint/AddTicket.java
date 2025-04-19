@@ -14,7 +14,7 @@ import static spark.Spark.post;
 
 public class AddTicket {
 
-    public static void register(FlightCacheManager cache, MetadataRepository repository) {
+    public static void register(FlightCacheManager cacheManager, MetadataRepository repository) {
 
         post("/add-ticket", (Request req, Response res) -> {
             try {
@@ -43,9 +43,9 @@ public class AddTicket {
                 entry.password = password;
                 entry.db = JdbcUrlBuilder.build(dbType, host, port, dbName);
 
-                repository.save(ticket, entry, user, password);
-                cache.config.queries.put(ticket, entry);
-                cache.loadIfMissing(ticket);
+                repository.save(ticket, entry);
+                cacheManager.config.queries.put(ticket, entry);
+                cacheManager.loadIfMissing(ticket);
 
                 res.type("text/plain");
                 return "OK";
