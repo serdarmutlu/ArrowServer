@@ -17,7 +17,7 @@ public class MetadataRepository {
         return DriverManager.getConnection("jdbc:sqlite:" + dbPath);
     }
 
-    public void save(String ticket, QueryConfig.QueryEntry entry, String user, String password) throws SQLException {
+    public void save(String ticket, QueryConfig.QueryEntry entry) throws SQLException {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
             String sql = "INSERT INTO queries (ticket, sql, db_type, host, port, db_name, user, password, cache, ttl_minutes, initial_cache) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
@@ -30,22 +30,11 @@ public class MetadataRepository {
                 stmt.setString(4, entry.host);
                 stmt.setString(5, entry.port);
                 stmt.setString(6, entry.dbName);
-                stmt.setString(7, user);
-                stmt.setString(8, password);
+                stmt.setString(7, entry.user);
+                stmt.setString(8, entry.password);
                 stmt.setBoolean(9, entry.cache);
                 stmt.setInt(10, entry.ttlMinutes);
                 stmt.setBoolean(11, entry.initialCache);
-
-                stmt.setString(12, entry.sql);
-                stmt.setString(13, entry.dbType);
-                stmt.setString(14, entry.host);
-                stmt.setString(15, entry.port);
-                stmt.setString(16, entry.dbName);
-                stmt.setString(17, user);
-                stmt.setString(18, password);
-                stmt.setBoolean(19, entry.cache);
-                stmt.setInt(20, entry.ttlMinutes);
-                stmt.setBoolean(21, entry.initialCache);
 
                 stmt.executeUpdate();
             }

@@ -30,7 +30,7 @@ public class UpdateTicket {
             entry.cache = true;
 
             config.queries.put(ticket, entry);
-            new MetadataRepository("metadata.db").save(ticket, entry, entry.user, entry.password);
+            new MetadataRepository("metadata.db").save(ticket, entry);
 
             // Cache varsa sil -> yeniden yüklensin
             cache.refresh(ticket);

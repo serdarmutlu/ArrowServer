@@ -7,7 +7,7 @@ import ws.prodigy.endpoint.*;
 import static spark.Spark.*;
 
 public class FlightApiServer {
-    public static void start(FlightCacheManager cache, BufferAllocator allocator, QueryConfig config) {
+    public static void start(FlightCacheManager cacheManager, BufferAllocator allocator, QueryConfig config) {
         port(8080);
         staticFiles.location("/static");
 
@@ -19,13 +19,13 @@ public class FlightApiServer {
             return null;
         });
 
-        AddTicket.register(cache, new MetadataRepository("metadata.db"));
-        UpdateTicket.register(cache, config);
-        DeleteTicket.register(cache, config);
-        GetTickets.register(cache);
+        AddTicket.register(cacheManager, new MetadataRepository("metadata.db"));
+        UpdateTicket.register(cacheManager, config);
+        DeleteTicket.register(cacheManager, config);
+        GetTickets.register(cacheManager);
         GetMetadata.register(config);
-        GetData.register(cache, config);
-        GetCacheInfo.register(cache);
-        SqlQuery.register(cache);
+        GetData.register(cacheManager, config);
+        GetCacheInfo.register(cacheManager);
+        SqlQuery.register(cacheManager);
     }
 }
