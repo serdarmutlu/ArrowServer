@@ -1,0 +1,119 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vue + PicoCSS Ticket Tablosu</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+  <style>
+    [v-cloak] { display: none; }
+    table td, table th { text-align: left; }
+    .modal {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="container" id="app" v-cloak>
+    <h2>Ticket Listesi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>SQL</th>
+          <th>TTL</th>
+          <th>DB Tipi</th>
+          <th>Cache</th>
+          <th>Initial Cache</th>
+          <th>İşlem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="ticket in tickets" :key="ticket.name">
+          <td>{{ ticket.name }}</td>
+          <td>{{ ticket.sql }}</td>
+          <td>{{ ticket.ttlMinutes }}</td>
+          <td>{{ ticket.dbType }}</td>
+          <td>{{ ticket.cache ? '✅' : '❌' }}</td>
+          <td>{{ ticket.initialCache ? '✅' : '❌' }}</td>
+          <td><button @click="editTicket(ticket)">✏️</button></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="modal" v-if="showEditDialog">
+      <div class="modal-content" style="background:white; padding:1em; border-radius:8px; width: 400px; max-width:90%;">
+        <h3>Ticket Düzenle</h3>
+        <form @submit.prevent="submitEdit">
+          <label>SQL:
+            <textarea v-model="editForm.sql" rows="3" style="width:100%"></textarea>
+          </label>
+          <label>TTL:
+            <input type="number" v-model="editForm.ttlMinutes" style="width:100%" />
+          </label>
+          <label>DB Tipi:
+            <input type="text" v-model="editForm.dbType" style="width:100%" />
+          </label>
+          <div style="text-align:right; margin-top:1em;">
+            <button type="submit">Kaydet</button>
+            <button type="button" @click="cancelEdit">İptal</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          tickets: [],
+          showEditDialog: false,
+          editForm: {}
+        };
+      },
+      methods: {
+        editTicket(ticket) {
+          this.editForm = { ...ticket };
+          this.showEditDialog = true;
+        },
+        cancelEdit() {
+          this.showEditDialog = false;
+        },
+        async submitEdit() {
+          try {
+            const res = await fetch("/update-ticket", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ticket: this.editForm.name, ...this.editForm })
+            });
+            if (!res.ok) throw new Error(await res.text());
+            this.showEditDialog = false;
+            this.loadTickets?.();
+          } catch (e) {
+            alert("Hata: " + e.message);
+          }
+        }
+      },
+      async mounted() {
+        const res = await fetch("/tickets");
+        const ticketNames = await res.json();
+        const results = [];
+        for (const name of ticketNames) {
+          const meta = await fetch(`/metadata?ticket=${encodeURIComponent(name)}`).then(r => r.json());
+          results.push({ name, ...meta });
+        }
+        this.tickets = results;
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>

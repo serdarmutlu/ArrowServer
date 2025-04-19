@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+
+<html lang="tr">
+<head>
+<meta charset="utf-8"/>
+<title>Vue + PicoCSS Ticket Tablosu</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<link href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css" rel="stylesheet"/>
+<style>
+    [v-cloak] { display: none; }
+    table td, table th { text-align: left; }
+  </style>
+<style>
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+[v-cloak] { display: none; }
+</style></head>
+<body>
+<main class="container" id="app" v-cloak="">
+<h2>Ticket Listesi</h2>
+<table>
+<thead>
+<tr>
+<th>Ad</th>
+<th>SQL</th>
+<th>TTL</th>
+<th>DB Tipi</th>
+<th>Cache</th>
+<th>Initial Cache</th>
+<th>İşlem</th></tr>
+</thead>
+<tbody>
+<tr :key="ticket.name" v-for="ticket in tickets">
+<td>{{ ticket.name }}</td>
+<td>{{ ticket.sql }}</td>
+<td>{{ ticket.ttlMinutes }}</td>
+<td>{{ ticket.dbType }}</td>
+<td>{{ ticket.cache ? '✅' : '❌' }}</td>
+<td>{{ ticket.initialCache ? '✅' : '❌' }}</td>
+<td><button @click="editTicket(ticket)">✏️ Düzenle</button></td></tr>
+</tbody>
+</table>
+
+<div class="modal" v-cloak="" v-if="showEditDialog">
+<div class="modal-content" style="background:white; padding:1em; border-radius:8px; width: 400px; max-width:90%;">
+<h3>Ticket Düzenle</h3>
+<form @submit.prevent="submitEdit">
+<label>SQL:
+        <textarea rows="3" style="width:100%" v-model="editForm.sql"></textarea>
+</label>
+<label>TTL:
+        <input style="width:100%" type="number" v-model="editForm.ttlMinutes"/>
+</label>
+<label>DB Tipi:
+        <input style="width:100%" type="text" v-model="editForm.dbType"/>
+</label>
+<div style="text-align:right; margin-top:1em;">
+<button type="submit">Kaydet</button>
+<button @click="cancelEdit" type="button">İptal</button>
+</div>
+</form>
+</div>
+</div>
+</main>
+<script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          tickets: [],
+          showEditDialog: false,
+          editForm: {}
+        };
+      },
+      async 
+      methods: {
+        editTicket(ticket) {
+          console.log("Düzenlenecek ticket:", ticket);
+          alert(JSON.stringify(ticket, null, 2));
+          this.editForm = { ...ticket };
+          this.showEditDialog = true;
+        },
+        cancelEdit() {
+          this.showEditDialog = false;
+        },
+        submitEdit() {
+          alert("Kaydedildi: " + JSON.stringify(this.editForm, null, 2));
+          this.showEditDialog = false;
+        },
+      },
+    mounted() {
+        const res = await fetch("/tickets");
+        const ticketNames = await res.json();
+        const results = [];
+        for (const name of ticketNames) {
+          const meta = await fetch(`/metadata?ticket=${encodeURIComponent(name)}`).then(r => r.json());
+          results.push({ name, ...meta });
+        }
+        this.tickets = results;
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>

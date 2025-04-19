@@ -1,0 +1,62 @@
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Vue + PicoCSS Ticket Tablosu</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+  <style>
+    [v-cloak] { display: none; }
+    table td, table th { text-align: left; }
+  </style>
+</head>
+<body>
+  <main class="container" id="app" v-cloak>
+    <h2>Ticket Listesi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Ad</th>
+          <th>SQL</th>
+          <th>TTL</th>
+          <th>DB Tipi</th>
+          <th>Cache</th>
+          <th>Initial Cache</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="ticket in tickets" :key="ticket.name">
+          <td>{{ ticket.name }}</td>
+          <td>{{ ticket.sql }}</td>
+          <td>{{ ticket.ttlMinutes }}</td>
+          <td>{{ ticket.dbType }}</td>
+          <td>{{ ticket.cache ? '✅' : '❌' }}</td>
+          <td>{{ ticket.initialCache ? '✅' : '❌' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </main>
+
+  <script>
+    const { createApp } = Vue;
+    createApp({
+      data() {
+        return {
+          tickets: []
+        };
+      },
+      async mounted() {
+        const res = await fetch("/tickets");
+        const ticketNames = await res.json();
+        const results = [];
+        for (const name of ticketNames) {
+          const meta = await fetch(`/metadata?ticket=${encodeURIComponent(name)}`).then(r => r.json());
+          results.push({ name, ...meta });
+        }
+        this.tickets = results;
+      }
+    }).mount("#app");
+  </script>
+</body>
+</html>

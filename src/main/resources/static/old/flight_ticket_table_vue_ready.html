@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>🛫 Flight Cache Viewer</title>
+<link href="https://cdn.jsdelivr.net/npm/@picocss/pico@latest/css/pico.min.css" rel="stylesheet"/>
+</head>
+<body>
+<main class="container">
+<h1>🛫 Flight Cache Viewer</h1>
+<label for="ticketSelect">Ticket seç:</label>
+<select id="ticketSelect"></select>
+<div class="grid" style="margin-top: 1em; margin-bottom: 1.5em;">
+<button id="editBtn">📝 Düzenle</button>
+<button class="secondary" id="deleteBtn">🗑️ Sil</button>
+</div>
+<div class="grid">
+<button id="openDataDialogBtn">Veriyi Getir</button>
+<button class="secondary" id="refreshBtn">Cache Yenile</button>
+<button class="outline" id="openDialogBtn">➕ Yeni Ticket</button>
+</div>
+<div id="ttlDisplay" style="margin-top: 1em;"></div>
+<dialog id="addTicketDialog">
+<article>
+<header>
+<strong id="dialogTitle">Yeni Ticket Ekle</strong>
+</header>
+<form id="addTicketForm">
+<input id="ticketName" placeholder="Ticket adı" required="" type="text"/>
+<input id="sqlQuery" placeholder="SQL sorgusu" required="" type="text"/>
+<input id="ttl" min="1" placeholder="TTL (dakika)" required="" type="number" value="5"/>
+<select id="dbType" required="">
+<option value="">Veritabanı Tipi</option>
+<option>PostgreSQL</option>
+<option>MySQL</option>
+<option>Oracle</option>
+</select>
+<input id="host" placeholder="Host" required="" type="text"/>
+<input id="port" placeholder="Port" required="" type="number"/>
+<input id="dbName" placeholder="Veritabanı Adı" required="" type="text"/>
+<input id="user" placeholder="Kullanıcı Adı" required="" type="text"/>
+<input id="password" placeholder="Şifre" required="" type="password"/>
+<footer style="margin-top: 1em;">
+<button class="primary" id="submitBtn" type="submit">Ekle</button>
+<button class="secondary" id="closeDialogBtn" type="button">İptal</button>
+</footer>
+</form>
+</article>
+</dialog>
+<dialog id="dataDialog">
+<article style="width: 100%; max-width: none;">
+<header>
+<strong>📊 Veri Görüntüleme</strong>
+</header>
+<div class="grid">
+<button class="contrast" id="csvPageBtn">Bu Sayfayı CSV</button>
+<button class="contrast" id="csvAllBtn">Tüm Kayıtları CSV</button>
+<button class="secondary" id="closeDataDialogBtn">Kapat</button>
+</div>
+<!-- 🆕 Filtre input -->
+<input id="filterInput" placeholder="Filtre (örn. ad, ID vs.)" style="width: 100%; margin-top: 1em;" type="text"/>
+<div id="tableContainer" style="margin-top: 1em;"></div>
+<div id="pagination" style="margin-top: 1em; text-align: center;"></div>
+</article>
+</dialog>
+<div id="app"><section style="margin-top: 2em;">
+<h3>🎟️ Ticket Yönetimi</h3>
+<table id="ticketTable">
+<thead>
+<tr>
+<th>Ticket</th>
+<th>DB</th>
+<th>TTL</th>
+<th>Cache?</th>
+<th>Initial?</th>
+<th>Düzenle</th>
+<th>Sil</th>
+<th>Toggle</th>
+<th>Yenile</th>
+</tr>
+</thead>
+<tbody>
+<tr :key="ticket.name" v-for="ticket in tickets">
+<td>{{ ticket.name }}</td>
+<td>{{ ticket.dbType }}</td>
+<td>{{ ticket.ttlMinutes }}</td>
+<td>{{ ticket.cache ? '✅' : '❌' }}</td>
+<td>{{ ticket.initialCache ? '✅' : '❌' }}</td>
+<td><button @click="editTicket(ticket)">✏️</button></td>
+<td><button @click="deleteTicket(ticket)">🗑️</button></td>
+<td><button @click="toggleInitial(ticket)">🔄</button></td>
+<td><button @click="refreshTicket(ticket)">♻️</button></td>
+</tr>
+</tbody>
+</table>
+</section></div>
+<section style="margin-top: 2em;">
+<h3>🧪 SQL Konsolu</h3>
+<textarea id="sqlInput" placeholder="SELECT * FROM myTicket WHERE age &gt; 30" rows="4" style="width: 100%;"></textarea>
+<button class="primary" id="runSqlBtn" style="margin-top: 0.5em;">Sorguyu Çalıştır</button>
+<div id="sqlError" style="color: red; margin-top: 1em;"></div>
+<div id="sqlResult" style="margin-top: 1em;"></div>
+</section>
+</main><script>
+document.addEventListener("DOMContentLoaded", () => {
+  async function loadTickets() {
+    const res = await fetch("/tickets");
+    const tickets = await res.json();
+    const tbody = document.querySelector("#ticketTable tbody");
+    tbody.innerHTML = "";
+
+    for (const ticket of tickets) {
+      const metaRes = await fetch(`/metadata?ticket=${encodeURIComponent(ticket)}`);
+      const meta = await metaRes.json();
+
+      console.log("⬇️ Ticket:", ticket, meta);
+
+      const tr = document.createElement("tr");
+
+      const columns = [
+        ticket,
+        meta.dbType ?? "-",
+        meta.ttlMinutes ?? "-",
+        Boolean(meta.cache) ? "✅" : "❌",
+        Boolean(meta.initialCache) ? "✅" : "❌"
+      ];
+      console.log("📄 Kolonlar:", columns);
+
+      columns.forEach(text => {
+        const td = document.createElement("td");
+        td.textContent = String(text);
+        tr.appendChild(td);
+      });
+
+      // ✏️ Düzenle
+      const editTd = document.createElement("td");
+      const editBtn = document.createElement("button");
+      editBtn.innerText = "✏️";
+      editBtn.onclick = () => openEditDialog(ticket);
+      editTd.appendChild(editBtn);
+      tr.appendChild(editTd);
+
+      // 🗑️ Sil
+      const deleteTd = document.createElement("td");
+      const deleteBtn = document.createElement("button");
+      deleteBtn.innerText = "🗑️";
+      deleteBtn.onclick = () => deleteTicket(ticket);
+      deleteTd.appendChild(deleteBtn);
+      tr.appendChild(deleteTd);
+
+      // 🔄 Toggle
+      const toggleTd = document.createElement("td");
+      const toggleBtn = document.createElement("button");
+      toggleBtn.innerText = "🔄";
+      toggleBtn.onclick = () => toggleInitial(ticket, meta);
+      toggleTd.appendChild(toggleBtn);
+      tr.appendChild(toggleTd);
+
+      // ♻️ Refresh
+      const refreshTd = document.createElement("td");
+      const refreshBtn = document.createElement("button");
+      refreshBtn.innerText = "♻️";
+      refreshBtn.onclick = () => refreshTicket(ticket);
+      refreshTd.appendChild(refreshBtn);
+      tr.appendChild(refreshTd);
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  // Global functions
+  window.openEditDialog = (ticket) => alert("✏️ Düzenle: " + ticket);
+
+  window.deleteTicket = async (ticket) => {
+    console.log("🧪 Silme işlemi başlatıldı:", ticket);
+    if (!confirm("Bu ticket silinsin mi?\nTicket: " + ticket)) {
+      console.log("🚫 Silme işlemi iptal edildi");
+      return;
+    }
+    try {
+      const endpoint = `/delete-ticket?ticket=${encodeURIComponent(ticket)}`;
+      console.log("🔗 DELETE çağrılıyor:", endpoint);
+      const res = await fetch(endpoint, { method: "DELETE" });
+      const text = await res.text();
+      console.log("📦 Yanıt kodu:", res.status, "İçerik:", text);
+      if (res.ok) {
+        alert("✅ Ticket silindi: " + ticket);
+        loadTickets();
+      } else {
+        alert("❌ Silme başarısız: " + text);
+      }
+    } catch (e) {
+      console.error("🔥 Silme hatası:", e);
+      alert("❌ Sunucu hatası: " + e.message);
+    }
+  };
+
+  window.toggleInitial = async (ticket, meta) => {
+    const updated = { ...meta, initialCache: !meta.initialCache };
+    await fetch("/update-ticket", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket, ...updated })
+    });
+    loadTickets();
+  };
+
+  window.refreshTicket = async (ticket) => {
+    await fetch(`/data?ticket=${encodeURIComponent(ticket)}&page=0&size=1`);
+    loadTickets();
+  };
+
+  loadTickets();
+});
+</script><script>
+const { createApp } = Vue;
+
+createApp({
+  data() {
+    return {
+      tickets: []
+    };
+  },
+  methods: {
+    async loadTickets() {
+      const res = await fetch("/tickets");
+      const ticketNames = await res.json();
+      const results = [];
+
+      for (const name of ticketNames) {
+        const meta = await fetch(`/metadata?ticket=${encodeURIComponent(name)}`).then(r => r.json());
+        results.push({ name, ...meta });
+      }
+
+      this.tickets = results;
+    },
+    async deleteTicket(ticket) {
+      if (!confirm("Silinsin mi?\n" + ticket.name)) return;
+      const res = await fetch(`/delete-ticket?ticket=${encodeURIComponent(ticket.name)}`, { method: "DELETE" });
+      const text = await res.text();
+      if (res.ok) {
+        alert("Silindi!");
+        this.loadTickets();
+      } else {
+        alert("Hata: " + text);
+      }
+    },
+    async toggleInitial(ticket) {
+      const updated = { ...ticket, initialCache: !ticket.initialCache };
+      await fetch("/update-ticket", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticket: ticket.name, ...updated })
+      });
+      this.loadTickets();
+    },
+    async refreshTicket(ticket) {
+      await fetch(`/data?ticket=${encodeURIComponent(ticket.name)}&page=0&size=1`);
+      this.loadTickets();
+    },
+    editTicket(ticket) {
+      alert("Düzenle: " + ticket.name);
+    }
+  },
+  mounted() {
+    this.loadTickets();
+  }
+}).mount("#app");
+</script></body>
+</html>
