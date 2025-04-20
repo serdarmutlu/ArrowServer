@@ -13,13 +13,13 @@ import static spark.Spark.get;
 
 public class GetTickets {
     public static void register(FlightCacheManager cache) {
-        get("/ticketnames", (req, res) -> {
+        get("/ticket/names", (req, res) -> {
             ObjectMapper mapper = new ObjectMapper();
             res.type("application/json");
             return mapper.writeValueAsString(cache.listTickets());
         });
 
-        get("/tickets", (req, res) -> {
+        get("/ticket/all", (req, res) -> {
             var list = new ArrayList<Map<String, Object>>();
             for (var ticket : cache.listTickets()) {
                 QueryConfig config = cache.config;

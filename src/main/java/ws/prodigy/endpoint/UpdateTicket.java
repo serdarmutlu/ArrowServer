@@ -12,7 +12,7 @@ import static spark.Spark.put;
 
 public class UpdateTicket {
     public static void register(FlightCacheManager cache, QueryConfig config) {
-        put("/update-ticket", (req, res) -> {
+        put("/ticket/update", (req, res) -> {
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> body = mapper.readValue(req.body(), Map.class);
 

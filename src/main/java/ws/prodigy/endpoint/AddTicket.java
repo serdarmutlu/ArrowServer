@@ -16,7 +16,7 @@ public class AddTicket {
 
     public static void register(FlightCacheManager cacheManager, MetadataRepository repository) {
 
-        post("/add-ticket", (Request req, Response res) -> {
+        post("/ticket/add", (Request req, Response res) -> {
             try {
                 ObjectMapper mapper = new ObjectMapper();
                 Map<String, Object> body = mapper.readValue(req.body(), Map.class);
