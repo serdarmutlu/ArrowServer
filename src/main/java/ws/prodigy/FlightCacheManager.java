@@ -52,6 +52,17 @@ public class FlightCacheManager {
             this.loadIfMissing(ticket);
         }
     }
+
+    public void unload(String ticket) {
+        CacheEntry removed = cache.remove(ticket);
+        if (removed != null && removed.root != null) {
+            removed.root.clear(); // Bellek temizliği
+            System.out.println("🧹 Cache temizlendi: " + ticket);
+        } else {
+            System.out.println("⚠️ Cache'de bulunamadı: " + ticket);
+        }
+    }
+
     public VectorSchemaRoot get(String ticket) {
         CacheEntry entry = cache.get(ticket);
         return entry != null ? entry.root : null;

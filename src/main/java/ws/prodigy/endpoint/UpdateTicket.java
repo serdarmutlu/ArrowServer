@@ -22,7 +22,7 @@ public class UpdateTicket {
             entry.ttlMinutes = (int) body.get("ttl");
             entry.dbType = (String) body.get("dbType");
             entry.host = (String) body.get("host");
-            entry.port = (String) body.get("port");
+            entry.port = String.valueOf(body.get("port"));
             entry.dbName = (String) body.get("dbName");
             entry.user = (String) body.get("user");
             entry.password = (String) body.get("password");
@@ -30,7 +30,7 @@ public class UpdateTicket {
             entry.cache = true;
 
             config.queries.put(ticket, entry);
-            new MetadataRepository("metadata.db").save(ticket, entry);
+            new MetadataRepository("metadata.db").updateQuery(ticket, entry);
 
             // Cache varsa sil -> yeniden yüklensin
             cache.refresh(ticket);

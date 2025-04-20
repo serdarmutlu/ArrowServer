@@ -43,7 +43,7 @@ public class AddTicket {
                 entry.password = password;
                 entry.db = JdbcUrlBuilder.build(dbType, host, port, dbName);
 
-                repository.save(ticket, entry);
+                repository.insertQuery(ticket, entry);
                 cacheManager.config.queries.put(ticket, entry);
                 cacheManager.loadIfMissing(ticket);
 
