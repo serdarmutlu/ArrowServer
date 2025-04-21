@@ -34,8 +34,8 @@ public class GetTickets {
                 map.put("host", entry.host);
                 map.put("port", entry.port);
                 map.put("dbName", entry.dbName);
-                map.put("cache", entry.cache);
                 map.put("initialCache", entry.initialCache);
+                map.put("runtimeCache", cache.contains(ticket)); // canlı cache durumu
                 list.add(map);
             }
             res.type("application/json");

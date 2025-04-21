@@ -20,12 +20,18 @@ public class FlightApiServer {
         });
 
         AddTicket.register(cacheManager, new MetadataRepository("metadata.db"));
-        UpdateTicket.register(cacheManager, config);
-        DeleteTicket.register(cacheManager, config);
-        GetTickets.register(cacheManager);
-        GetMetadata.register(config);
-        GetData.register(cacheManager, config);
+        UpdateTicket.register(cacheManager);
+        DeleteTicket.register(cacheManager);
+
+        GetData.register(cacheManager);
         GetCacheInfo.register(cacheManager);
+        GetMetadata.register(cacheManager);
+        GetTickets.register(cacheManager);
+
+        UnloadTicket.register(cacheManager);
+        LoadTicket.register(cacheManager);
+        GetCacheMemory.register(cacheManager);
+
         SqlQuery.register(cacheManager);
     }
 }

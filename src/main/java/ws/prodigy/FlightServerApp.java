@@ -23,7 +23,6 @@ public class FlightServerApp {
         for (MetadataRepository.TableMetadata meta : metadataList) {
             QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
             entry.sql = meta.sql();
-            entry.cache = meta.cache();
             entry.ttlMinutes = (int) (meta.ttlMillis() / 60000); // millis → minutes
             entry.dbType = meta.dbType();
             entry.host = meta.host();

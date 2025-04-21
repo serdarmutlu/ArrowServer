@@ -11,12 +11,13 @@ import java.util.Map;
 import static spark.Spark.put;
 
 public class UpdateTicket {
-    public static void register(FlightCacheManager cache, QueryConfig config) {
-        put("/ticket/update", (req, res) -> {
+    public static void register(FlightCacheManager cache) {
+        put("/ticket/update/:ticket", (req, res) -> {
+            QueryConfig config = cache.config;
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> body = mapper.readValue(req.body(), Map.class);
+            String ticket = req.params(":ticket");
 
-            String ticket = (String) body.get("ticket");
             QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
             entry.sql = (String) body.get("sql");
             entry.ttlMinutes = (int) body.get("ttl");
@@ -27,13 +28,13 @@ public class UpdateTicket {
             entry.user = (String) body.get("user");
             entry.password = (String) body.get("password");
             entry.db = JdbcUrlBuilder.build(entry.dbType, entry.host, entry.port, entry.dbName);
-            entry.cache = true;
+            entry.initialCache = (Boolean) body.get("initialCache");
 
             config.queries.put(ticket, entry);
             new MetadataRepository("metadata.db").updateQuery(ticket, entry);
 
             // Cache varsa sil -> yeniden yüklensin
-            cache.refresh(ticket);
+            //cache.refresh(ticket);
 
             res.status(200);
             return "OK";

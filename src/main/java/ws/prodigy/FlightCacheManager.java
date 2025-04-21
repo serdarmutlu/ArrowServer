@@ -79,6 +79,11 @@ public class FlightCacheManager {
         return config.queries.keySet().stream().sorted().toList();
     }
 
+    public void delete(String ticket) {
+        this.unload(ticket);
+        cache.remove(ticket);
+    }
+
     public void refresh(String ticket) {
         cache.remove(ticket);
         loadIfMissing(ticket);
@@ -88,9 +93,20 @@ public class FlightCacheManager {
         if (config.queries == null) config.queries = new HashMap<>();
         QueryConfig.QueryEntry entry = new QueryConfig.QueryEntry();
         entry.sql = sql;
-        entry.cache = cacheEnabled;
         entry.ttlMinutes = ttlMinutes;
         config.queries.put(ticket, entry);
+    }
+
+    public long getTotalBufferBytes() {
+        long total = 0;
+        for (CacheEntry entry : cache.values()) {
+            if (entry.root != null) {
+                total += entry.root.getFieldVectors().stream()
+                        .mapToLong(vec -> vec.getBufferSize())
+                        .sum();
+            }
+        }
+        return total;
     }
 
     public CacheEntry getEntry(String ticket) {

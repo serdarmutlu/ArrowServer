@@ -19,8 +19,8 @@ public class MetadataRepository {
 
     public void insertQuery(String ticket, QueryConfig.QueryEntry entry) throws SQLException {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
-            String sql = "INSERT INTO queries (ticket, sql, db_type, host, port, db_name, user, password, cache, ttl_minutes, initial_cache) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO queries (ticket, sql, db_type, host, port, db_name, user, password, ttl_minutes, initial_cache) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                 stmt.setString(1, ticket);
@@ -31,9 +31,8 @@ public class MetadataRepository {
                 stmt.setString(6, entry.dbName);
                 stmt.setString(7, entry.user);
                 stmt.setString(8, entry.password);
-                stmt.setBoolean(9, entry.cache);
-                stmt.setInt(10, entry.ttlMinutes);
-                stmt.setBoolean(11, entry.initialCache);
+                stmt.setInt(9, entry.ttlMinutes);
+                stmt.setBoolean(10, entry.initialCache);
                 stmt.executeUpdate();
             }
         }
@@ -41,7 +40,7 @@ public class MetadataRepository {
 
     public void updateQuery(String ticket, QueryConfig.QueryEntry entry) throws SQLException {
         try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath)) {
-            String sql = "UPDATE queries SET sql=?, db_type=?, host=?, port=?, db_name=?, user=?, password=?, cache=?, ttl_minutes=?, initial_cache=? " +
+            String sql = "UPDATE queries SET sql=?, db_type=?, host=?, port=?, db_name=?, user=?, password=?, ttl_minutes=?, initial_cache=? " +
                     "WHERE ticket=?";
 
             try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -52,10 +51,9 @@ public class MetadataRepository {
                 stmt.setString(5, entry.dbName);
                 stmt.setString(6, entry.user);
                 stmt.setString(7, entry.password);
-                stmt.setBoolean(8, entry.cache);
-                stmt.setInt(9, entry.ttlMinutes);
-                stmt.setBoolean(10, entry.initialCache);
-                stmt.setString(11, ticket);
+                stmt.setInt(8, entry.ttlMinutes);
+                stmt.setBoolean(9, entry.initialCache);
+                stmt.setString(10, ticket);
                 stmt.executeUpdate();
             }
         }
@@ -114,7 +112,7 @@ public class MetadataRepository {
 
         try (Connection conn = connect();
              Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT ticket, sql, db_type, host, port, db_name, user, password, cache, ttl_minutes, initial_cache FROM queries")) {
+             ResultSet rs = stmt.executeQuery("SELECT ticket, sql, db_type, host, port, db_name, user, password, ttl_minutes, initial_cache FROM queries")) {
 
             while (rs.next()) {
                 result.add(new TableMetadata(
@@ -124,7 +122,6 @@ public class MetadataRepository {
                         rs.getString("host"),
                         rs.getString("port"),
                         rs.getString("db_name"),
-                        rs.getBoolean("cache"),
                         rs.getInt("ttl_minutes") * 60_000L,
                         rs.getString("user"),
                         rs.getString("password"),
@@ -143,7 +140,6 @@ public class MetadataRepository {
             String host,
             String port,
             String dbName,
-            boolean cache,
             long ttlMillis,
             String user,
             String password,
@@ -163,7 +159,6 @@ public class MetadataRepository {
                     db_name TEXT,
                     user TEXT,
                     password TEXT,
-                    cache BOOLEAN,
                     ttl_minutes INTEGER,
                     initial_cache BOOLEAN
                 )

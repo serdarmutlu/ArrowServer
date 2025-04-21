@@ -12,7 +12,8 @@ import java.util.*;
 import static spark.Spark.get;
 
 public class GetData {
-    public static void register(FlightCacheManager cache, QueryConfig config) {
+    public static void register(FlightCacheManager cache) {
+        QueryConfig config = cache.config;
 
         get("/data", (Request req, Response res) -> {
             ObjectMapper mapper = new ObjectMapper();

@@ -11,12 +11,14 @@ import java.sql.SQLException;
 import static spark.Spark.delete;
 
 public class DeleteTicket {
-    public static void register(FlightCacheManager cache, QueryConfig config) {
+    public static void register(FlightCacheManager cache) {
         delete("/ticket/delete/:ticketid", (req, res) -> {
+            QueryConfig config = cache.config;
             String ticket = req.params(":ticketid");
 
             config.queries.remove(ticket);
-            cache.refresh(ticket); // varsa cache'ten çıkar
+
+            cache.delete(ticket); // varsa cache'ten çıkar
 
             try (Connection conn = DriverManager.getConnection("jdbc:sqlite:metadata.db");
                  PreparedStatement stmt = conn.prepareStatement("DELETE FROM queries WHERE ticket = ?")) {
