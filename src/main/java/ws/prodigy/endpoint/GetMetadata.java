@@ -41,11 +41,6 @@ public class GetMetadata {
             System.out.println("🎯 /metadata çağrıldı: " + ticket);
             return mapper.writeValueAsString(result);
         });
-        get("/ticket/names", (req, res) -> {
-            ObjectMapper mapper = new ObjectMapper();
-            res.type("application/json");
-            return mapper.writeValueAsString(cache.listTickets());
-        });
 
         get("/ticket-metadata-list", (req, res) -> {
             var list = new ArrayList<Map<String, Object>>();

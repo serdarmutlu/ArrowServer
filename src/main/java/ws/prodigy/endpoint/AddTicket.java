@@ -46,7 +46,7 @@ public class AddTicket {
 
                 repository.insertQuery(ticket, entry);
                 cacheManager.config.queries.put(ticket, entry);
-                cacheManager.loadIfMissing(ticket);
+                //cacheManager.loadIfMissing(ticket);
 
                 res.type("text/plain");
                 return "OK";

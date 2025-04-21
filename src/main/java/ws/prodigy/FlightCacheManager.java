@@ -61,6 +61,7 @@ public class FlightCacheManager {
         } else {
             System.out.println("⚠️ Cache'de bulunamadı: " + ticket);
         }
+        System.gc(); // Garbage Collector’ı tetikle
     }
 
     public VectorSchemaRoot get(String ticket) {

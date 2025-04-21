@@ -15,10 +15,11 @@ public class GetData {
     public static void register(FlightCacheManager cache) {
         QueryConfig config = cache.config;
 
-        get("/data", (Request req, Response res) -> {
+        get("/data/:ticket", (Request req, Response res) -> {
             ObjectMapper mapper = new ObjectMapper();
 
-            String ticket = req.queryParams("ticket");
+            String ticket = req.params(":ticket");
+
             int page = Integer.parseInt(req.queryParams("page"));
             int size = Integer.parseInt(req.queryParams("size"));
             String filter = req.queryParams("filter");

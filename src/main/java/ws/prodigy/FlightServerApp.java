@@ -36,10 +36,10 @@ public class FlightServerApp {
             config.queries.put(meta.ticket(), entry);
         }
 
-        FlightCacheManager cache = new FlightCacheManager(allocator, config);
+        FlightCacheManager cacheManager = new FlightCacheManager(allocator, config);
 
         // Flight Server başlat
-        CachedFlightProducer producer = new CachedFlightProducer(cache);
+        CachedFlightProducer producer = new CachedFlightProducer(cacheManager);
         Location location = Location.forGrpcInsecure("localhost", 8815);
         FlightServer server = FlightServer.builder(allocator, location, producer).build().start();
 
@@ -47,11 +47,11 @@ public class FlightServerApp {
         for (var entry : config.queries.entrySet()) {
             if (entry.getValue().initialCache) {
                 System.out.println("🔄 Preloading cache for ticket: " + entry.getKey());
-                cache.load(entry.getKey());
+                cacheManager.load(entry.getKey());
             }
         }
         // API başlat
-        FlightApiServer.start(cache, allocator, config);
+        FlightApiServer.start(cacheManager, allocator, config);
 
 
         server.awaitTermination();

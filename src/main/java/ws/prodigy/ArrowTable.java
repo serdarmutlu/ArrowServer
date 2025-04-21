@@ -138,6 +138,13 @@ public class ArrowTable {
         }
     }
 
+    public long getTotalBufferBytes() {
+        long total = 0;
+        for (FieldVector vector : vectors) {
+            total += vector.getBufferSize();
+        }
+        return total;
+    }
 
     public void print() {
         int rowCount = vectors.isEmpty() ? 0 : vectors.get(0).getValueCount();
